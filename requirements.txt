@@ -1,0 +1,7 @@
+.NET 9.0 SDK
+Entity Framework
+Microsoft.EntityFrameworkCore.Design package
+Microsoft.EntityFrameworkCore.Sqlite package 
+Microsoft.EntityFrameworkCore.Tools package
+Swagger
+
