@@ -193,6 +193,3 @@ http://localhost:5000/swagger
 ## Notes
 - Interest is manually accrued through an API call rather than being automatically calculated over time.
 - Overdraft is allowed only for CheckingAccounts, up to a predefined limit (e.g., $500).
-
-This concludes the API documentation for the Banking System.
-
