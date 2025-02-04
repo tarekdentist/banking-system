@@ -1,82 +1,198 @@
-### Banking System
+# Banking System API Documentation
 
-This project is a banking system backend built using ASP.NET Core and Entity Framework Core. It simulates basic banking operations such as depositing, withdrawing, transferring money, calculating interest, and retrieving account balances, while persisting account and transaction data to a relational database. 
+## Overview
+This API provides a backend banking system built using ASP.NET Core and Entity Framework Core. It supports basic banking operations such as:
+- Creating accounts
+- Depositing and withdrawing funds
+- Transferring money between accounts
+- Calculating interest
+- Retrieving account balances
 
-## Entities Design
+All account and transaction data are persisted in a relational database.
 
-I designed this project with the following 4 main entities, which are the base for everything I built upon them:
+## Base URL
+```
+http://localhost:5000/api/banking
+```
 
-1. **Account**  
-   This entity is an abstract class that includes the essential attributes any account should have, such as `AccountId` and `Balance`. It provides flexibility to introduce more account types in the future based on this abstract class.  
-   - It defines an abstract function `Withdraw`, which derived classes implement in their own way.  
-   - It also includes a `Deposit` function to add funds to the account.
+## Authentication
+This API does not currently implement authentication. In a production environment, authentication and authorization should be enforced.
 
-2. **CheckingAccount**  
-   This entity inherits from the `Account` class and implements specific logic for checking accounts:  
-   - Allows overdrafts up to a predefined limit (e.g., $500).  
-   - Overrides the `Withdraw` function to enforce overdraft rules.
+---
 
-3. **SavingsAccount**  
-   This entity also inherits from the `Account` class and includes specific functionality for savings accounts:  
-   - Does not allow withdrawals exceeding the available balance.  
-   - Supports interest accrual over time based on the account balance.  
-   - Overrides the `Withdraw` function to enforce withdrawal restrictions.
+## Endpoints
+### 1. Create Account
+**Endpoint:**
+```
+POST /api/banking/create
+```
+**Description:** Creates a new account of type CheckingAccount or SavingsAccount.
 
-4. **Transaction**  
-   This entity represents a record of all account activities, such as deposits, withdrawals, and transfers. It includes attributes like:  
-   - `TransactionId`, `TransactionType`, `Amount`, and `Timestamp`.  
-   - Transactions are linked to the relevant accounts for tracking purposes.
+**Request Parameters:**
+| Parameter    | Type   | Required | Description                                  |
+|-------------|--------|----------|----------------------------------------------|
+| accountType | string | Yes      | Type of account: "checking" or "savings"   |
+| initialBalance | decimal | No  | Initial deposit amount (default: 0)        |
 
-## Controllers
+**Response:**
+```json
+{
+    "AccountId": 1,
+    "Balance": 1000,
+    "Type": "savings"
+}
+```
+---
 
-The `AccountsController` serves as the core API controller, providing endpoints for interacting with the system. It uses dependency injection to integrate with the `ApplicationDbContext` for database operations.
+### 2. Deposit Funds
+**Endpoint:**
+```
+POST /api/banking/deposit
+```
+**Description:** Deposits funds into the specified account.
 
-Here are the API endpoints it exposes:
+**Request Parameters:**
+| Parameter  | Type    | Required | Description              |
+|-----------|---------|----------|--------------------------|
+| accountId | int     | Yes      | The ID of the account   |
+| amount    | decimal | Yes      | Amount to deposit       |
 
-1. Create Account
-- Creates a new account of type `CheckingAccount` or `SavingsAccount`.
-- Adds the account to the database and returns the account details.
+**Response:**
+```json
+{
+    "AccountId": 1,
+    "Balance": 2000
+}
+```
+---
 
-2. Deposit
-- Deposits funds into the specified account.
-- Records the transaction in the database.
+### 3. Withdraw Funds
+**Endpoint:**
+```
+POST /api/banking/withdraw
+```
+**Description:** Withdraws funds from an account with account-specific restrictions applied.
 
-3. Withdraw
-- Withdraws funds from the specified account.
-- Enforces account-specific rules (e.g., overdraft limits for `CheckingAccount` or balance restrictions for `SavingsAccount`).
-- Records the transaction in the database.
+**Request Parameters:**
+| Parameter  | Type    | Required | Description              |
+|-----------|---------|----------|--------------------------|
+| accountId | int     | Yes      | The ID of the account   |
+| amount    | decimal | Yes      | Amount to withdraw      |
 
-4. Transfer
-- Transfers funds between two accounts.
-- Validates account existence and sufficient balance.
-- Records the transfer as two separate transactions: "Transfer Out" and "Transfer In."
+**Response:**
+```json
+{
+    "AccountId": 1,
+    "Balance": 500
+}
+```
+---
 
-5. Retrieve Balance
-- Retrieves the current balance of the specified account ID. 
+### 4. Transfer Funds
+**Endpoint:**
+```
+POST /api/banking/transfer
+```
+**Description:** Transfers funds between two accounts.
 
-6. Interest
-- Accrues interest for a `SavingsAccount` over a specified number of months.
-- Records the interest accrual as a transaction in the database.
-`Normaally I would make the interest be calculated automatically based on the balance and the time passed but I did it this way for simplicity and testing purposes`
+**Request Parameters:**
+| Parameter    | Type    | Required | Description                     |
+|-------------|---------|----------|---------------------------------|
+| fromAccountId | int   | Yes      | ID of the sender's account     |
+| toAccountId   | int   | Yes      | ID of the receiver's account   |
+| amount        | decimal | Yes   | Amount to transfer            |
 
-## Database Design
+**Response:**
+```json
+{
+    "FromAccount": {
+        "AccountId": 1,
+        "Balance": 300
+    },
+    "ToAccount": {
+        "AccountId": 2,
+        "Balance": 1500
+    }
+}
+```
+---
 
-The database schema includes the following tables:
+### 5. Retrieve Account Balance
+**Endpoint:**
+```
+GET /api/banking/{id}/balance
+```
+**Description:** Retrieves the current balance of a specified account.
 
-1. Accounts
-- Stores account details, including:
-  - `AccountId`: Unique identifier.
-  - `Balance`: Current balance.
-  - `AccountType`: Indicates whether the account is a `CheckingAccount` or `SavingsAccount`.
+**Path Parameter:**
+| Parameter | Type | Required | Description               |
+|-----------|------|----------|---------------------------|
+| id        | int  | Yes      | The ID of the account    |
 
-2. Transactions
-- Logs all account activities with attributes such as:
-  - `TransactionId`: Unique identifier.
-  - `TransactionType`: Type of transaction (e.g., "Deposit", "Withdraw").
-  - `Amount`: The monetary value involved.
-  - `Timestamp`: Time of the transaction.
+**Response:**
+```json
+{
+    "AccountId": 1,
+    "Balance": 1500
+}
+```
+---
 
+### 6. Accrue Interest
+**Endpoint:**
+```
+POST /api/banking/interest
+```
+**Description:** Accrues interest for a SavingsAccount over a specified number of months.
 
-`To set up the database, please make sure that you have .NET SDK installed and run the shell script provided in the project's files.`
+**Request Parameters:**
+| Parameter  | Type    | Required | Description                       |
+|-----------|---------|----------|-----------------------------------|
+| accountId | int     | Yes      | The ID of the account            |
+| months    | int     | Yes      | Number of months to accrue interest |
 
-`To test the project's API's, make sure you have Swagger installed and visit <localhost-domain>/swagger`
+**Response:**
+```json
+{
+    "AccountId": 1,
+    "NewBalance": 1100,
+    "Message": "Successfully accrued interest for 6 months"
+}
+```
+---
+
+## Database Schema
+### 1. Accounts Table
+| Column      | Type    | Description                                     |
+|------------|---------|-------------------------------------------------|
+| AccountId  | int     | Unique identifier for the account              |
+| Balance    | decimal | Current balance in the account                 |
+| AccountType | string | Specifies "checking" or "savings"               |
+
+### 2. Transactions Table
+| Column        | Type    | Description                                      |
+|--------------|---------|--------------------------------------------------|
+| TransactionId | int     | Unique identifier for the transaction           |
+| AccountId    | int     | Foreign key referencing the related account      |
+| TransactionType | string | Type of transaction (Deposit, Withdraw, Transfer, Interest Accrual) |
+| Amount       | decimal | The monetary value of the transaction           |
+| Timestamp    | datetime | Time of the transaction                        |
+
+---
+
+## Setup Instructions
+1. Ensure that you have the .NET SDK installed.
+2. Run the shell script provided in the project files to set up the database.
+3. Use Swagger to test the API by navigating to:
+```
+http://localhost:5000/swagger
+```
+
+---
+
+## Notes
+- Interest is manually accrued through an API call rather than being automatically calculated over time.
+- Overdraft is allowed only for CheckingAccounts, up to a predefined limit (e.g., $500).
+
+This concludes the API documentation for the Banking System.
+
